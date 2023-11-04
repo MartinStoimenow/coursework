@@ -1,0 +1,30 @@
+name: Auto Add to TODO Project
+
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  add-to-todo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to TODO Project
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: project } = await github.projects.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const projectId = project.find(proj => proj.name === 'TODO').id;
+            const { data: columns } = await github.projects.listColumns({
+              project_id: projectId,
+            });
+            const columnId = columns.find(col => col.name === 'TODO').id;
+            await github.projects.createCard({
+              column_id: columnId,
+              content_id: context.payload.issue.id,
+              content_type: 'Issue'
+            });
